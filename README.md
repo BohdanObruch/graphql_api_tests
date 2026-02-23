@@ -54,7 +54,6 @@ tests/
   test_graphql_validation.py
   test_graphql_business_flows.py
 schema.graphql
-TESTING_GRAPHQL_API.md
 ```
 
 ## Requirements
