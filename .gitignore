@@ -1,0 +1,9 @@
+.venv
+.idea
+.env
+.vscode
+/test-result
+swagger_*
+__pycache__/
+.pytest_cache/
+*.pyc

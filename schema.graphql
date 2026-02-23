@@ -1,0 +1,941 @@
+"""
+GraphQL query
+"""
+type Query {
+  """
+  Получение текущего пользователя.
+
+  Альтернатива REST метода GET /v1/account
+
+  Пример вызова:
+
+  query {
+      accountCurrent(accessToken: "...") {
+          resource {
+              login
+          }
+      }
+  }
+  """
+  accountCurrent(accessToken: String): EnvelopeOfUserDetails
+
+  """
+  Метод получения списка всех активированных пользователей с пагинацией.
+
+  Пример использования:
+
+  query($paging: PagingQueryInput) {
+      accounts(withInactive: true, paging: $paging) {
+          users {
+              login
+          },
+          paging {
+              currentPage,
+              totalPagesCount,
+              totalEntitiesCount
+          }
+      }
+  }
+
+  Данные запроса:
+
+  {
+      "paging": {
+          "size": 2,
+          "skip": 1
+      }
+  }
+  """
+  accounts(paging: PagingQueryInput, withInactive: Boolean!): AccountsResponse
+}
+
+"""
+GraphQL mutation
+"""
+type Mutation {
+  """
+  Регистрация пользователя.
+
+  Альтернатива REST метода POST /v1/account.
+
+  Пример вызова:
+
+  mutation registerAccount($registration: RegistrationInput) {
+      registerAccount(registration: $registration) {
+          id,
+          login
+      }
+  }
+
+  Переменные запроса:
+
+  {
+      "registration": {
+          "email": "User1@mail.ru",
+          "login": "User1",
+          "password": "..."
+      }
+  }
+  """
+  registerAccount(registration: RegistrationInput): AccountRegisterResponse
+
+  """
+  Активация пользователя.
+
+  Альтернатива REST метода PUT /v1/account/{token}
+
+  Пример вызова:
+
+  mutation activateAccount($activationToken: UUID!) {
+      activateAccount(activationToken: $activationToken) {
+          resource {
+              login,
+              name,
+              roles
+          }
+      }
+  }
+
+  Переменные запроса:
+
+  {
+      "activationToken": "..."
+  }
+  """
+  activateAccount(activationToken: UUID!): EnvelopeOfUser
+
+  """
+  Сменить почту пользователя.
+
+  Аналог REST метода PUT /v1/account/email
+
+  Пример вызова:
+
+  mutation changeAccountEmail($changeEmail: ChangeEmailInput) {
+      changeAccountEmail(changeEmail: $changeEmail) {
+          resource {
+              login
+          }
+      }
+  }
+
+  Данные запроса:
+
+  {
+      "changeEmail": {
+          "login": "User",
+          "password": "...",
+          "email": "NewEmailUser@mail.ru"
+      }
+  }
+  """
+  changeAccountEmail(changeEmail: ChangeEmailInput): EnvelopeOfUser
+
+  """
+  Инициировать смену пароля пользователя.
+
+  Альтернатива REST метода POST /v1/account/password
+
+  Пример вызова:
+
+  mutation resetAccountPassword($resetPassword: ResetPasswordInput) {
+      resetAccountPassword(resetPassword: $resetPassword) {
+          resource {
+              login
+          }
+      }
+  }
+
+  Данные запроса:
+
+  {
+      "resetPassword": {
+          "login": "User",
+          "email": "email@mail.ru"
+      }
+  }
+  """
+  resetAccountPassword(resetPassword: ResetPasswordInput): EnvelopeOfUser
+
+  """
+  Завершить смену пароля пользователя.
+
+  Альтернатива REST метода PUT /v1/account/password
+
+  Пример вызова:
+
+  mutation changeAccountPassword($changePassword: ChangePasswordInput) {
+      changeAccountPassword(changePassword: $changePassword) {
+          resource {
+              login
+          }
+      }
+  }
+
+  Данные запроса:
+
+  {
+      "changePassword": {
+          "login": "User",
+          "token": "Токен, отправленный на почту при вызове ResetAccountPassword",
+          "oldPassword": "...",
+          "newPassword": "..."
+      }
+  }
+  """
+  changeAccountPassword(changePassword: ChangePasswordInput): EnvelopeOfUser
+
+  """
+  Обновить данные профиля текущего пользователя.
+
+  Пример вызова:
+
+  mutation updateAccount($accessToken: String, $userData: UpdateUserInput) {
+      updateAccount(accessToken: $accessToken, userData: $userData) {
+          resource {
+              login,
+              name,
+              icq,
+              skype
+          }
+      }
+  }
+
+  Данные запроса:
+
+  {
+      "accessToken": "...",
+      "userData": {
+          "name": "My user",
+          "icq": "1234567",
+          "skype": "my skype"
+      }
+  }
+  """
+  updateAccount(
+    accessToken: String
+    userData: UpdateUserInput
+  ): EnvelopeOfUserDetails
+
+  """
+  Авторизация пользователя.
+
+  Альтернатива REST метода POST /v1/account/login
+
+  Пример вызова:
+
+  mutation loginAccount($login: LoginCredentialsInput) {
+      loginAccount(login: $login) {
+          user {
+              resource {
+                  login
+              }
+          },
+          token
+      }
+  }
+
+  Переменные запроса:
+
+  {
+      "login": {
+          "login": "User",
+          "password": "...",
+          "rememberMe": false
+      }
+  }
+  """
+  loginAccount(login: LoginCredentialsInput): AccountLoginResponse
+
+  """
+  Закрытие текущей сессии пользователя.
+
+  Альтернатива REST метода DELETE /v1/account/logout
+
+  Пример вызова:
+
+  mutation logoutAccount($accessToken: String) {
+      logoutAccount(accessToken: $accessToken)
+  }
+
+  Данные запроса:
+
+  {
+  "accessToken": "..."
+  }
+  """
+  logoutAccount(accessToken: String): MutationResult!
+
+  """
+  Закрытие всех сессий пользователя (кроме текущей).
+
+  Альтернатива REST метода DELETE /v1/account/logout/all
+
+  Пример вызова:
+
+  mutation logoutAllAccount($accessToken: String) {
+      logoutAllAccount(accessToken: $accessToken)
+  }
+
+  Данные запроса:
+
+  {
+  "accessToken": "..."
+  }
+  """
+  logoutAllAccount(accessToken: String): MutationResult!
+}
+
+"""
+Login subscription
+"""
+type Subscription {
+  """
+  Подписка на событие логина пользователя, пример (из интерфейса graphql)
+
+   subscription {
+       userLogin {
+           login,
+           timestamp
+       }
+   }
+  """
+  userLogin: LoginEvent
+}
+
+"""
+Register response
+"""
+type AccountRegisterResponse {
+  """
+  User id
+  """
+  id: UUID!
+
+  """
+  User login
+  """
+  login: String
+}
+
+"""
+Query for paging
+"""
+input PagingQueryInput {
+  """
+  Skip previous entities
+  """
+  skip: Int
+
+  """
+  Page must contain entity of given number
+  """
+  number: Int
+
+  """
+  Page size
+  """
+  size: Int
+}
+
+"""
+Список пользователей
+"""
+type AccountsResponse {
+  """
+  Список пользователей
+  """
+  users: [User]
+
+  """
+  Данные пагинации
+  """
+  paging: PagingResult
+}
+
+type EnvelopeOfUserDetails {
+  resource: UserDetails
+}
+
+"""
+DTO model for user registration
+"""
+input RegistrationInput {
+  """
+  Login
+  """
+  login: String
+
+  """
+  Email
+  """
+  email: String
+
+  """
+  Password
+  """
+  password: String
+}
+
+type EnvelopeOfUser {
+  resource: User
+}
+
+scalar UUID
+
+"""
+API DTO model for changing user email
+"""
+input ChangeEmailInput {
+  """
+  User login
+  """
+  login: String
+
+  """
+  User password
+  """
+  password: String
+
+  """
+  New user email
+  """
+  email: String
+}
+
+"""
+DTO model for user password reseting
+"""
+input ResetPasswordInput {
+  """
+  Login
+  """
+  login: String
+
+  """
+  Email
+  """
+  email: String
+}
+
+"""
+API DTO model for password changing
+"""
+input ChangePasswordInput {
+  """
+  User login
+  """
+  login: String
+
+  """
+  Password reset token
+  """
+  token: UUID
+
+  """
+  Old password
+  """
+  oldPassword: String
+
+  """
+  New password
+  """
+  newPassword: String
+}
+
+"""
+DTO for user updating
+"""
+input UpdateUserInput {
+  """
+  User login
+  """
+  login: String
+
+  """
+  User defined status
+  """
+  status: String
+
+  """
+  Rating disability flag
+  """
+  ratingDisabled: Boolean
+
+  """
+  User real name
+  """
+  name: String
+
+  """
+  User real location
+  """
+  location: String
+
+  """
+  User ICQ number
+  """
+  icq: String
+
+  """
+  User Skype login
+  """
+  skype: String
+
+  """
+  User-defined extended information
+  """
+  info: String
+
+  """
+  User settings
+  """
+  settings: UserSettingsInput
+}
+
+"""
+Результат авторизации пользователя
+"""
+type AccountLoginResponse {
+  """
+  Токен доступа
+  """
+  token: String
+
+  """
+  Данные пользователя
+  """
+  user: EnvelopeOfUser
+}
+
+"""
+Login-password credentials
+"""
+input LoginCredentialsInput {
+  """
+  Login
+  """
+  login: String
+
+  """
+  Password
+  """
+  password: String
+
+  """
+  Flag to create persistent session
+  """
+  rememberMe: Boolean!
+}
+
+"""
+Результат выполнения запроса, не возвращающего данные
+"""
+enum MutationResult {
+  """
+  Запрос выполнен успешно
+  """
+  OK
+}
+
+"""
+Login event data
+"""
+type LoginEvent {
+  login: String
+  timestamp: DateTime!
+}
+
+"""
+The `DateTime` scalar represents an ISO-8601 compliant date time type.
+"""
+scalar DateTime
+
+"""
+User settings
+"""
+input UserSettingsInput {
+  """
+  Settings id (should be same as UserId)
+  """
+  id: UUID!
+
+  """
+  If the user is nanny, each newbie linked to it will receive the custom private message upon registration
+  """
+  nannyGreetingsMessage: String
+
+  """
+  Color scheme for the website view
+  """
+  colorSchema: ColorSchema!
+
+  """
+  Paging settings
+  """
+  paging: PagingSettingsInput
+}
+
+"""
+DTO model for user details
+"""
+type UserDetails {
+  """
+  User ICQ number
+  """
+  icq: String
+
+  """
+  User Skype login
+  """
+  skype: String
+
+  """
+  URL of profile picture original
+  """
+  originalPictureUrl: String
+
+  """
+  User-defined extended information
+  """
+  info: InfoBbText
+
+  """
+  User settings
+  """
+  settings: UserSettings
+
+  """
+  Login
+  """
+  login: String
+
+  """
+  Roles
+  """
+  roles: [UserRole!]
+
+  """
+  Profile picture URL M-size
+  """
+  mediumPictureUrl: String
+
+  """
+  Profile picture URL S-size
+  """
+  smallPictureUrl: String
+
+  """
+  User defined status
+  """
+  status: String
+
+  """
+  Rating
+  """
+  rating: Rating
+
+  """
+  Last seen online moment
+  """
+  online: DateTime
+
+  """
+  User real name
+  """
+  name: String
+
+  """
+  User real location
+  """
+  location: String
+
+  """
+  User registration moment
+  """
+  registration: DateTime
+}
+
+"""
+DTO model for paged data
+"""
+type PagingResult {
+  """
+  Total pages of certain size across the filtered entities
+  """
+  totalPagesCount: Int!
+
+  """
+  Total entities count of certain type across the filtered entities
+  """
+  totalEntitiesCount: Int!
+
+  """
+  Current page number
+  """
+  currentPage: Int!
+
+  """
+  Page size
+  """
+  pageSize: Int!
+
+  """
+  Selected entity number
+  """
+  entityNumber: Int!
+}
+
+"""
+DTO model for user
+"""
+type User {
+  """
+  Login
+  """
+  login: String
+
+  """
+  Roles
+  """
+  roles: [UserRole!]
+
+  """
+  Profile picture URL M-size
+  """
+  mediumPictureUrl: String
+
+  """
+  Profile picture URL S-size
+  """
+  smallPictureUrl: String
+
+  """
+  User defined status
+  """
+  status: String
+
+  """
+  Rating
+  """
+  rating: Rating
+
+  """
+  Last seen online moment
+  """
+  online: DateTime
+
+  """
+  User real name
+  """
+  name: String
+
+  """
+  User real location
+  """
+  location: String
+
+  """
+  User registration moment
+  """
+  registration: DateTime
+}
+
+"""
+DTO model for user rating
+"""
+type Rating {
+  """
+  Rating participation flag
+  """
+  enabled: Boolean!
+
+  """
+  Quality rating
+  """
+  quality: Int!
+
+  """
+  Quantity rating
+  """
+  quantity: Int!
+}
+
+"""
+User role
+"""
+enum UserRole {
+  """
+  Unauthenticated user
+  """
+  GUEST
+
+  """
+  Authenticated user with no privileges
+  """
+  PLAYER
+
+  """
+  Developer / Owner
+  """
+  ADMINISTRATOR
+
+  """
+  Helps newbies, can premoderate games
+  """
+  NANNY_MODERATOR
+
+  """
+  Moderates a certain forum or the chat, can give warnings, close inactive games
+  """
+  REGULAR_MODERATOR
+
+  """
+  Moderates the site, can give warnings, bans and deal with complaints on regular moderators
+  """
+  SENIOR_MODERATOR
+}
+
+type UserSettings {
+  """
+  Website color schema
+  """
+  colorSchema: ColorSchema!
+
+  """
+  Message that user's newbies will receive once they are connected
+  """
+  nannyGreetingsMessage: String
+
+  """
+  Paging settings
+  """
+  paging: PagingSettings
+}
+
+type InfoBbText {
+  """
+  Parse mode
+  """
+  parseMode: BbParseMode!
+
+  """
+  Text
+  """
+  value: String
+}
+
+"""
+Paging settings
+"""
+input PagingSettingsInput {
+  """
+  Number of posts on a game room page
+  """
+  postsPerPage: Int!
+
+  """
+  Number of commentaries on a game or a topic page
+  """
+  commentsPerPage: Int!
+
+  """
+  Number of detached topics on a forum page
+  """
+  topicsPerPage: Int!
+
+  """
+  Number of private messages and conversations on dialogue page
+  """
+  messagesPerPage: Int!
+
+  """
+  Number of other entities like search results, users etc
+  """
+  entitiesPerPage: Int!
+}
+
+"""
+Website color schema
+"""
+enum ColorSchema {
+  """
+  Base DM3 color schema
+  """
+  MODERN
+
+  """
+  DM3 color schema with paler colors
+  """
+  PALE
+
+  """
+  Base DM2 color schema
+  """
+  CLASSIC
+
+  """
+  DM2 color schema with paler colors
+  """
+  CLASSIC_PALE
+
+  """
+  Nightly mode
+  """
+  NIGHT
+}
+
+"""
+BB text parse mode
+"""
+enum BbParseMode {
+  """
+  General text parse mode
+  """
+  COMMON
+
+  """
+  General information parse mode
+  """
+  INFO
+
+  """
+  Game post parse mode
+  """
+  POST
+
+  """
+  Chat message parse mode
+  """
+  CHAT
+}
+
+"""
+API DTO for user paging settings
+"""
+type PagingSettings {
+  """
+  Number of posts on a game room page
+  """
+  postsPerPage: Int!
+
+  """
+  Number of commentaries on a game or a topic page
+  """
+  commentsPerPage: Int!
+
+  """
+  Number of detached topics on a forum page
+  """
+  topicsPerPage: Int!
+
+  """
+  Number of private messages and conversations on dialogue page
+  """
+  messagesPerPage: Int!
+
+  """
+  Number of other entities on page
+  """
+  entitiesPerPage: Int!
+}
